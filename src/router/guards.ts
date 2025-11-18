@@ -5,11 +5,10 @@ export function setupAuthGuard(router: Router) {
   router.beforeEach(async (to, from, next) => {
     const authStore = useAuthStore()
     
-    // Wait for auth initialization to complete
+    // Only wait briefly for initialization (max 1 second)
     if (!authStore.isInitialized) {
-      // Wait a bit for initialization
       let attempts = 0
-      while (!authStore.isInitialized && attempts < 50) {
+      while (!authStore.isInitialized && attempts < 10) {
         await new Promise(resolve => setTimeout(resolve, 100))
         attempts++
       }

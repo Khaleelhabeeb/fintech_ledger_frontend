@@ -38,13 +38,14 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
     try {
       user.value = await authService.getCurrentUser()
+      isInitialized.value = true
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch user'
+      isInitialized.value = true
       // Clear invalid token
       logout()
     } finally {
       isLoading.value = false
-      isInitialized.value = true
     }
   }
 
@@ -53,6 +54,11 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = null
     localStorage.removeItem('auth_token')
     error.value = null
+  }
+
+  // Allow setting isInitialized from outside
+  function setInitialized(value: boolean) {
+    isInitialized.value = value
   }
 
   return {
@@ -64,6 +70,7 @@ export const useAuthStore = defineStore('auth', () => {
     isInitialized,
     login,
     logout,
-    getCurrentUser
+    getCurrentUser,
+    setInitialized
   }
 })

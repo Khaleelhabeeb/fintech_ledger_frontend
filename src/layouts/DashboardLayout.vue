@@ -52,14 +52,12 @@ function handleNavigate() {
 
 // Initialize data on mount
 onMounted(async () => {
-  // Fetch user if not already loaded
-  if (!authStore.user && authStore.token) {
-    await authStore.getCurrentUser()
-  }
-  
-  // Fetch accounts if not already loaded
+  // Only fetch accounts - user should already be loaded by main.ts
+  // Fetch in background without blocking render
   if (accountsStore.accounts.length === 0) {
-    await accountsStore.fetchAccounts()
+    accountsStore.fetchAccounts().catch(err => {
+      console.error('Failed to fetch accounts:', err)
+    })
   }
 })
 </script>
