@@ -1,7 +1,7 @@
 <template>
   <AppModal
     :is-open="isOpen"
-    :title="step === 3 ? 'Success!' : 'Withdraw Funds'"
+    :title="step === 3 ? 'Success!' : 'Transfer Funds'"
     size="md"
     @close="handleClose"
   >
@@ -12,13 +12,13 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
         </svg>
       </div>
-      <h3 class="text-lg font-semibold text-gray-900 mb-2">Withdrawal Successful!</h3>
+      <h3 class="text-lg font-semibold text-gray-900 mb-2">Transfer Successful!</h3>
       <p class="text-gray-600">
-        {{ formatCurrency(parseFloat(amount), currency) }} has been withdrawn from your account.
+        {{ formatCurrency(parseFloat(amount), currency) }} has been transferred.
       </p>
     </div>
 
-    <!-- Step 1: Amount Entry -->
+    <!-- Step 1: Transfer Details Entry -->
     <div v-else-if="step === 1">
       <form @submit.prevent="handleNext">
         <div class="space-y-4">
@@ -30,10 +30,34 @@
             </p>
           </div>
 
+          <!-- To Account Selection -->
+          <div>
+            <label for="to-account" class="block text-sm font-medium text-gray-700 mb-1">
+              Transfer To Account
+            </label>
+            <select
+              id="to-account"
+              v-model="toAccountId"
+              class="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-colors duration-150"
+              :disabled="isLoading"
+              required
+            >
+              <option value="">Select an account</option>
+              <option
+                v-for="account in availableAccounts"
+                :key="account.entity_id"
+                :value="account.entity_id"
+              >
+                {{ account.currency }} Account ({{ formatCurrency(account.balance, account.currency) }})
+              </option>
+            </select>
+            <p v-if="errors.toAccountId" class="mt-1 text-sm text-red-600">{{ errors.toAccountId }}</p>
+          </div>
+
           <!-- Amount Input -->
           <AppInput
             v-model="amount"
-            label="Withdrawal Amount"
+            label="Transfer Amount"
             type="number"
             placeholder="0.00"
             :error="errors.amount"
@@ -42,10 +66,10 @@
             @blur="validateAmountField"
           />
 
-          <!-- Warning Message -->
-          <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-            <p class="text-sm text-yellow-800">
-              Please ensure you have sufficient balance before proceeding.
+          <!-- Info Message -->
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <p class="text-sm text-blue-800">
+              Funds will be transferred from your {{ currency }} account.
             </p>
           </div>
         </div>
@@ -55,25 +79,29 @@
     <!-- Step 2: Confirmation -->
     <div v-else-if="step === 2">
       <div class="space-y-4">
-        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-          <h4 class="text-sm font-semibold text-red-900 mb-2">
-            Confirm Withdrawal
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h4 class="text-sm font-semibold text-blue-900 mb-2">
+            Confirm Transfer
           </h4>
-          <p class="text-sm text-red-800 mb-3">
-            You are about to withdraw {{ formatCurrency(parseFloat(amount), currency) }} from your account.
+          <p class="text-sm text-blue-800 mb-3">
+            You are about to transfer {{ formatCurrency(parseFloat(amount), currency) }}.
           </p>
           <div class="space-y-2 text-sm">
             <div class="flex justify-between">
-              <span class="text-red-700">Current Balance:</span>
-              <span class="font-medium text-red-900">{{ formatCurrency(balance, currency) }}</span>
+              <span class="text-blue-700">From Account:</span>
+              <span class="font-medium text-blue-900">{{ currency }} ({{ formatCurrency(balance, currency) }})</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-red-700">Withdrawal Amount:</span>
-              <span class="font-medium text-red-900">{{ formatCurrency(parseFloat(amount), currency) }}</span>
+              <span class="text-blue-700">To Account:</span>
+              <span class="font-medium text-blue-900">{{ getToAccountDisplay() }}</span>
             </div>
-            <div class="border-t border-red-300 pt-2 flex justify-between">
-              <span class="text-red-700 font-semibold">New Balance:</span>
-              <span class="font-semibold text-red-900">
+            <div class="flex justify-between">
+              <span class="text-blue-700">Transfer Amount:</span>
+              <span class="font-medium text-blue-900">{{ formatCurrency(parseFloat(amount), currency) }}</span>
+            </div>
+            <div class="border-t border-blue-300 pt-2 flex justify-between">
+              <span class="text-blue-700 font-semibold">New Balance:</span>
+              <span class="font-semibold text-blue-900">
                 {{ formatCurrency(balance - parseFloat(amount), currency) }}
               </span>
             </div>
@@ -81,7 +109,7 @@
         </div>
 
         <p class="text-sm text-gray-600">
-          This action cannot be undone. Please confirm to proceed with the withdrawal.
+          Please confirm to proceed with the transfer.
         </p>
       </div>
     </div>
@@ -119,13 +147,13 @@
         </AppButton>
         <AppButton
           v-if="step === 2"
-          variant="danger"
+          variant="primary"
           :loading="isLoading"
           :disabled="isLoading"
           @click="handleConfirm"
           class="w-full sm:w-auto"
         >
-          Confirm Withdrawal
+          Confirm Transfer
         </AppButton>
       </div>
     </template>
@@ -142,6 +170,7 @@ import { useNotificationsStore } from '@/stores/notifications'
 import { validateWithdrawal } from '@/utils/validation'
 import { formatCurrency } from '@/utils/format'
 import type { Currency } from '@/types/common.types'
+import type { Account } from '@/types/account.types'
 
 interface Props {
   isOpen: boolean
@@ -161,13 +190,21 @@ const accountsStore = useAccountsStore()
 const notificationsStore = useNotificationsStore()
 
 const amount = ref<string>('')
-const errors = ref<{ amount?: string }>({})
+const toAccountId = ref<string>('')
+const errors = ref<{ amount?: string; toAccountId?: string }>({})
 const isLoading = ref(false)
 const step = ref<1 | 2 | 3>(1)
-const isSuccess = ref(false)
+
+const availableAccounts = computed(() => 
+  accountsStore.accounts.filter(acc => acc.entity_id !== props.accountId && acc.active)
+)
 
 const isFormValid = computed(() => {
-  return amount.value && !errors.value.amount && parseFloat(amount.value) > 0
+  return amount.value && 
+         toAccountId.value && 
+         !errors.value.amount && 
+         !errors.value.toAccountId && 
+         parseFloat(amount.value) > 0
 })
 
 const validateAmountField = () => {
@@ -175,9 +212,26 @@ const validateAmountField = () => {
   errors.value.amount = error || undefined
 }
 
+const validateToAccountField = () => {
+  if (!toAccountId.value) {
+    errors.value.toAccountId = 'Please select a destination account'
+  } else {
+    errors.value.toAccountId = undefined
+  }
+}
+
+const getToAccountDisplay = () => {
+  const account = accountsStore.accounts.find(acc => acc.entity_id === toAccountId.value)
+  if (account) {
+    return `${account.currency} (${formatCurrency(account.balance, account.currency)})`
+  }
+  return ''
+}
+
 const handleNext = () => {
   // Validate before moving to confirmation
   validateAmountField()
+  validateToAccountField()
   
   if (!isFormValid.value) {
     return
@@ -194,8 +248,8 @@ const handleConfirm = async () => {
   isLoading.value = true
   
   try {
-    const withdrawAmount = parseFloat(amount.value)
-    await accountsStore.withdraw(props.accountId, withdrawAmount)
+    const transferAmount = parseFloat(amount.value)
+    await accountsStore.transfer(props.accountId, toAccountId.value, transferAmount)
     
     // Show success state
     step.value = 3
@@ -206,7 +260,7 @@ const handleConfirm = async () => {
       handleClose()
     }, 1500)
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Withdrawal failed'
+    const errorMessage = error instanceof Error ? error.message : 'Transfer failed'
     notificationsStore.error(errorMessage)
     // Go back to step 1 on error
     step.value = 1
@@ -224,6 +278,7 @@ const handleClose = () => {
 
 const resetForm = () => {
   amount.value = ''
+  toAccountId.value = ''
   errors.value = {}
   step.value = 1
 }

@@ -8,13 +8,15 @@
         </label>
         <select
           id="transaction-type"
-          v-model="localFilters.type"
+          v-model="localFilters.transaction_type"
           class="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-colors duration-150"
           @change="handleFilterChange"
         >
           <option :value="undefined">All Transactions</option>
           <option :value="TransactionType.DEPOSIT">Deposits</option>
-          <option :value="TransactionType.WITHDRAW">Withdrawals</option>
+          <option :value="TransactionType.WITHDRAWAL">Withdrawals</option>
+          <option :value="TransactionType.TRANSFER_IN">Transfers In</option>
+          <option :value="TransactionType.TRANSFER_OUT">Transfers Out</option>
         </select>
       </div>
 
@@ -25,7 +27,7 @@
         </label>
         <input
           id="start-date"
-          v-model="localFilters.startDate"
+          v-model="localFilters.start_date"
           type="date"
           class="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-colors duration-150"
           @change="handleFilterChange"
@@ -39,7 +41,7 @@
         </label>
         <input
           id="end-date"
-          v-model="localFilters.endDate"
+          v-model="localFilters.end_date"
           type="date"
           class="block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-colors duration-150"
           @change="handleFilterChange"
@@ -100,9 +102,9 @@ const handleApplyFilters = () => {
 
 const handleClearFilters = () => {
   localFilters.value = {
-    type: undefined,
-    startDate: undefined,
-    endDate: undefined
+    transaction_type: undefined,
+    start_date: undefined,
+    end_date: undefined
   }
   handleFilterChange()
   handleApplyFilters()

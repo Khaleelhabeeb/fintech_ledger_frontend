@@ -1,21 +1,24 @@
 export enum TransactionType {
   DEPOSIT = 'DEPOSIT',
-  WITHDRAW = 'WITHDRAW'
+  WITHDRAWAL = 'WITHDRAWAL',
+  TRANSFER_IN = 'TRANSFER_IN',
+  TRANSFER_OUT = 'TRANSFER_OUT'
 }
 
 export interface Transaction {
   id: string
-  accountId: string
-  type: TransactionType
+  account_id: string
   amount: number
-  balanceAfter: number
-  actor: string
-  createdAt: string
-  description?: string
+  type: TransactionType
+  actor_id: string
+  timestamp: string
+  account_version: string
+  reference: string | null
 }
 
 export interface TransactionFilters {
-  type?: TransactionType
-  startDate?: string
-  endDate?: string
+  start_date?: string
+  end_date?: string
+  transaction_type?: TransactionType
+  actor_id?: string
 }

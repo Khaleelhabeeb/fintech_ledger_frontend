@@ -1,16 +1,23 @@
-import { apiClient, USE_MOCK } from '@/api/client'
-import { authMockService } from './mock/auth.mock'
+import { apiClient } from '@/api/client'
 import type { User, LoginCredentials, AuthResponse } from '@/types/auth.types'
 
 class AuthService {
   /**
-   * Authenticate user with email and password
+   * Register a new user with username, email, and password
+   */
+  async register(username: string, email: string, password: string): Promise<User> {
+    const response = await apiClient.post<User>('/auth/register', {
+      username,
+      email,
+      password
+    })
+    return response.data
+  }
+
+  /**
+   * Authenticate user with username and password
    */
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    if (USE_MOCK) {
-      return authMockService.login(credentials)
-    }
-
     const response = await apiClient.post<AuthResponse>('/auth/login', credentials)
     return response.data
   }
@@ -18,22 +25,15 @@ class AuthService {
   /**
    * Logout current user
    */
-  async logout(): Promise<void> {
-    if (USE_MOCK) {
-      return authMockService.logout()
-    }
-
-    await apiClient.post('/auth/logout')
+  logout(): void {
+    // No API call needed for stateless JWT
+    // Token removal handled by store
   }
 
   /**
    * Get current authenticated user
    */
   async getCurrentUser(): Promise<User> {
-    if (USE_MOCK) {
-      return authMockService.getCurrentUser()
-    }
-
     const response = await apiClient.get<User>('/auth/me')
     return response.data
   }

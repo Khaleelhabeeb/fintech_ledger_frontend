@@ -6,16 +6,16 @@
     </div>
 
     <form @submit.prevent="handleSubmit" class="space-y-4">
-      <!-- Name Input -->
+      <!-- Username Input -->
       <AppInput
-        v-model="formData.name"
-        label="Full Name"
+        v-model="formData.username"
+        label="Username"
         type="text"
-        placeholder="Enter your full name"
-        :error="errors.name"
+        placeholder="Choose a username"
+        :error="errors.username"
         :disabled="isLoading"
         required
-        @blur="validateField('name')"
+        @blur="validateField('username')"
       />
 
       <!-- Email Input -->
@@ -114,6 +114,7 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import AppInput from '@/components/common/AppInput.vue'
 import AppButton from '@/components/common/AppButton.vue'
 import {
@@ -124,10 +125,11 @@ import {
 } from '@/utils/validation'
 
 const router = useRouter()
+const authStore = useAuthStore()
 
 // Form data
 const formData = reactive({
-  name: '',
+  username: '',
   email: '',
   password: '',
   confirmPassword: ''
@@ -135,7 +137,7 @@ const formData = reactive({
 
 // Form errors
 const errors = reactive({
-  name: '',
+  username: '',
   email: '',
   password: '',
   confirmPassword: ''
@@ -149,8 +151,8 @@ const successMessage = ref('')
 // Validate individual field
 const validateField = (field: keyof typeof formData) => {
   switch (field) {
-    case 'name':
-      errors.name = validateRequired(formData.name, 'Full name') || ''
+    case 'username':
+      errors.username = validateRequired(formData.username, 'Username') || ''
       break
     case 'email':
       errors.email = validateEmail(formData.email) || ''
@@ -169,12 +171,12 @@ const validateField = (field: keyof typeof formData) => {
 
 // Validate entire form
 const validateForm = (): boolean => {
-  validateField('name')
+  validateField('username')
   validateField('email')
   validateField('password')
   validateField('confirmPassword')
   
-  return !errors.name && !errors.email && !errors.password && !errors.confirmPassword
+  return !errors.username && !errors.email && !errors.password && !errors.confirmPassword
 }
 
 // Handle form submission
@@ -191,11 +193,13 @@ const handleSubmit = async () => {
   isLoading.value = true
 
   try {
-    // Simulate API call with delay
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    // Call the auth service to register the user
+    await authStore.register(
+      formData.username,
+      formData.email,
+      formData.password
+    )
 
-    // In a real application, this would call an API endpoint
-    // For demo purposes, we'll just show a success message
     successMessage.value = 'Account created successfully! Redirecting to login...'
 
     // Redirect to login after 2 seconds

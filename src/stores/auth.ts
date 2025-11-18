@@ -5,21 +5,37 @@ import type { User, LoginCredentials } from '@/types/auth.types'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
-  const token = ref<string | null>(localStorage.getItem('auth_token'))
+  const token = ref<string | null>(localStorage.getItem('access_token'))
   const isLoading = ref(false)
   const error = ref<string | null>(null)
   const isInitialized = ref(false)
 
   const isAuthenticated = computed(() => !!token.value && !!user.value)
 
+  async function register(username: string, email: string, password: string) {
+    isLoading.value = true
+    error.value = null
+    try {
+      await authService.register(username, email, password)
+      // Registration successful, user should now login
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Registration failed'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   async function login(credentials: LoginCredentials) {
     isLoading.value = true
     error.value = null
     try {
       const response = await authService.login(credentials)
-      user.value = response.user
-      token.value = response.token
-      localStorage.setItem('auth_token', response.token)
+      token.value = response.access_token
+      localStorage.setItem('access_token', response.access_token)
+      
+      // Fetch user data after successful login
+      await getCurrentUser()
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Login failed'
       throw err
@@ -50,9 +66,10 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function logout() {
+    authService.logout()
     user.value = null
     token.value = null
-    localStorage.removeItem('auth_token')
+    localStorage.removeItem('access_token')
     error.value = null
   }
 
@@ -68,6 +85,7 @@ export const useAuthStore = defineStore('auth', () => {
     error,
     isAuthenticated,
     isInitialized,
+    register,
     login,
     logout,
     getCurrentUser,

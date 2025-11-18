@@ -82,7 +82,7 @@ import { ref, computed, watch } from 'vue'
 import AppModal from '@/components/common/AppModal.vue'
 import AppInput from '@/components/common/AppInput.vue'
 import AppButton from '@/components/common/AppButton.vue'
-import { useBalanceStore } from '@/stores/balance'
+import { useAccountsStore } from '@/stores/accounts'
 import { useNotificationsStore } from '@/stores/notifications'
 import { validateAmount } from '@/utils/validation'
 import { formatCurrency } from '@/utils/format'
@@ -101,7 +101,7 @@ const emit = defineEmits<{
   success: []
 }>()
 
-const balanceStore = useBalanceStore()
+const accountsStore = useAccountsStore()
 const notificationsStore = useNotificationsStore()
 
 const amount = ref<string>('')
@@ -134,7 +134,7 @@ const handleSubmit = async () => {
   
   try {
     const depositAmount = parseFloat(amount.value)
-    await balanceStore.deposit(props.accountId, depositAmount)
+    await accountsStore.deposit(props.accountId, depositAmount)
     
     // Show success state
     isSuccess.value = true

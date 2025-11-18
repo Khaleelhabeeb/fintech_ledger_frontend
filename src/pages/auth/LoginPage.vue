@@ -6,16 +6,16 @@
     </div>
 
     <form @submit.prevent="handleSubmit" class="space-y-4">
-      <!-- Email Input -->
+      <!-- Username Input -->
       <AppInput
-        v-model="formData.email"
-        label="Email"
-        type="email"
-        placeholder="Enter your email"
-        :error="errors.email"
+        v-model="formData.username"
+        label="Username"
+        type="text"
+        placeholder="Enter your username"
+        :error="errors.username"
         :disabled="authStore.isLoading"
         required
-        @blur="validateField('email')"
+        @blur="validateField('username')"
       />
 
       <!-- Password Input -->
@@ -68,39 +68,39 @@
     <!-- Demo Credentials -->
     <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
       <p class="text-xs font-medium text-blue-900 mb-2">Demo Credentials:</p>
-      <p class="text-xs text-blue-700">Email: demo@ledger.com</p>
-      <p class="text-xs text-blue-700">Password: Demo123!</p>
+      <p class="text-xs text-blue-700">username: alice</p>
+      <p class="text-xs text-blue-700">Password: alice12345</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import AppInput from '@/components/common/AppInput.vue'
 import AppButton from '@/components/common/AppButton.vue'
-import { validateEmail, validatePassword } from '@/utils/validation'
+import { validateRequired, validatePassword } from '@/utils/validation'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
 // Form data
 const formData = reactive({
-  email: '',
+  username: '',
   password: ''
 })
 
 // Form errors
 const errors = reactive({
-  email: '',
+  username: '',
   password: ''
 })
 
 // Validate individual field
-const validateField = (field: 'email' | 'password') => {
-  if (field === 'email') {
-    errors.email = validateEmail(formData.email) || ''
+const validateField = (field: 'username' | 'password') => {
+  if (field === 'username') {
+    errors.username = validateRequired(formData.username, 'Username') || ''
   } else if (field === 'password') {
     errors.password = validatePassword(formData.password, {
       minLength: 6,
@@ -114,10 +114,10 @@ const validateField = (field: 'email' | 'password') => {
 
 // Validate entire form
 const validateForm = (): boolean => {
-  validateField('email')
+  validateField('username')
   validateField('password')
   
-  return !errors.email && !errors.password
+  return !errors.username && !errors.password
 }
 
 // Handle form submission
@@ -130,7 +130,7 @@ const handleSubmit = async () => {
   try {
     // Attempt login
     await authStore.login({
-      email: formData.email,
+      username: formData.username,
       password: formData.password
     })
 

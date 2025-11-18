@@ -1,10 +1,17 @@
 import type { Currency } from './common.types'
 
 export interface Account {
-  id: string
-  userId: string
-  currency: Currency
+  entity_id: string
+  version: string
+  owner_id: string
   balance: number
-  createdAt: string
-  updatedAt: string
+  currency: Currency
+  active: boolean
+  changed_by_id: string
+  changed_on: string
+}
+
+export interface TransferResponse {
+  from_account: Account
+  to_account: Account
 }

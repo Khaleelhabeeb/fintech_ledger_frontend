@@ -22,7 +22,7 @@ import {
   Filler,
   type ChartOptions
 } from 'chart.js'
-import type { BalanceVersion } from '@/types/balance.types'
+import type { Account } from '@/types/account.types'
 import { formatCurrency, formatDateTime } from '@/utils/format'
 import type { Currency } from '@/types/common.types'
 
@@ -39,7 +39,7 @@ ChartJS.register(
 )
 
 interface Props {
-  versions: BalanceVersion[]
+  versions: Account[]
   currency?: Currency
 }
 
@@ -52,13 +52,13 @@ const chartData = computed(() => {
     return null
   }
 
-  // Sort versions by timestamp ascending for proper chart display
+  // Sort versions by changed_on ascending for proper chart display
   const sortedVersions = [...props.versions].sort(
-    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    (a, b) => new Date(a.changed_on).getTime() - new Date(b.changed_on).getTime()
   )
 
   return {
-    labels: sortedVersions.map(v => formatDateTime(v.timestamp)),
+    labels: sortedVersions.map(v => formatDateTime(v.changed_on)),
     datasets: [
       {
         label: 'Balance',

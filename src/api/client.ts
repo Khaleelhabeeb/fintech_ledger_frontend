@@ -1,8 +1,7 @@
 import axios, { type AxiosInstance } from 'axios'
 
-// Environment variables with defaults
-const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true'
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+// API base URL for FastAPI backend
+const API_BASE_URL = 'https://bankingledger-qnxkl.ondigitalocean.app/api/v1'
 
 // Create Axios instance with configuration
 export const apiClient: AxiosInstance = axios.create({
@@ -12,5 +11,3 @@ export const apiClient: AxiosInstance = axios.create({
     'Content-Type': 'application/json'
   }
 })
-
-export { USE_MOCK }

@@ -39,13 +39,13 @@
           <span
             :class="[
               'font-medium',
-              row.isCurrent ? 'text-accent' : 'text-gray-900'
+              isCurrentVersion(row) ? 'text-accent' : 'text-gray-900'
             ]"
           >
-            v{{ value }}
+            {{ value }}
           </span>
           <span
-            v-if="row.isCurrent"
+            v-if="isCurrentVersion(row)"
             class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-accent text-white"
           >
             Current
@@ -58,38 +58,36 @@
         <span
           :class="[
             'font-semibold text-lg',
-            row.isCurrent ? 'text-accent' : 'text-gray-900'
+            isCurrentVersion(row) ? 'text-accent' : 'text-gray-900'
           ]"
         >
           {{ formatCurrency(value, accountsStore.activeAccount?.currency || 'USD') }}
         </span>
       </template>
 
-      <!-- Change Amount Column -->
-      <template #cell-changeAmount="{ value }">
-        <span
-          v-if="value !== 0"
-          :class="[
-            'inline-flex items-center font-medium',
-            value > 0 ? 'text-green-600' : 'text-red-600'
-          ]"
-        >
-          {{ value > 0 ? '+' : '' }}{{ formatCurrency(value, accountsStore.activeAccount?.currency || 'USD') }}
-        </span>
-        <span v-else class="text-gray-500">-</span>
-      </template>
-
       <!-- Actor Column -->
-      <template #cell-changedBy="{ value }">
+      <template #cell-changed_by_id="{ value }">
         <span class="text-gray-700">{{ value }}</span>
       </template>
 
       <!-- Timestamp Column -->
-      <template #cell-timestamp="{ value }">
+      <template #cell-changed_on="{ value }">
         <div class="text-sm">
           <div class="text-gray-900">{{ formatDate(value, 'medium') }}</div>
           <div class="text-gray-500">{{ formatDate(value, 'time') }}</div>
         </div>
+      </template>
+
+      <!-- Status Column -->
+      <template #cell-active="{ value }">
+        <span
+          :class="[
+            'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
+            value ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+          ]"
+        >
+          {{ value ? 'Active' : 'Inactive' }}
+        </span>
       </template>
 
       <!-- Actions Column -->
@@ -121,19 +119,19 @@
         <div class="grid grid-cols-2 gap-4">
           <div>
             <p class="text-sm text-gray-600">Version Number</p>
-            <p class="text-lg font-semibold text-gray-900">v{{ selectedVersion.version }}</p>
+            <p class="text-lg font-semibold text-gray-900">{{ selectedVersion.version }}</p>
           </div>
           <div>
             <p class="text-sm text-gray-600">Status</p>
             <span
               :class="[
                 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                selectedVersion.isCurrent
+                isCurrentVersion(selectedVersion)
                   ? 'bg-accent text-white'
                   : 'bg-gray-100 text-gray-800'
               ]"
             >
-              {{ selectedVersion.isCurrent ? 'Current Version' : 'Historical Version' }}
+              {{ isCurrentVersion(selectedVersion) ? 'Current Version' : 'Historical Version' }}
             </span>
           </div>
         </div>
@@ -147,17 +145,15 @@
               </p>
             </div>
             <div>
-              <p class="text-sm text-gray-600">Change Amount</p>
-              <p
-                v-if="selectedVersion.changeAmount !== 0"
+              <p class="text-sm text-gray-600">Active Status</p>
+              <span
                 :class="[
-                  'text-2xl font-bold',
-                  selectedVersion.changeAmount > 0 ? 'text-green-600' : 'text-red-600'
+                  'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
+                  selectedVersion.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                 ]"
               >
-                {{ selectedVersion.changeAmount > 0 ? '+' : '' }}{{ formatCurrency(selectedVersion.changeAmount, accountsStore.activeAccount?.currency || 'USD') }}
-              </p>
-              <p v-else class="text-2xl font-bold text-gray-500">-</p>
+                {{ selectedVersion.active ? 'Active' : 'Inactive' }}
+              </span>
             </div>
           </div>
         </div>
@@ -166,19 +162,23 @@
           <div class="space-y-3">
             <div>
               <p class="text-sm text-gray-600">Changed By</p>
-              <p class="text-base font-medium text-gray-900">{{ selectedVersion.changedBy }}</p>
+              <p class="text-base font-medium text-gray-900">{{ selectedVersion.changed_by_id }}</p>
             </div>
             <div>
-              <p class="text-sm text-gray-600">Timestamp</p>
-              <p class="text-base font-medium text-gray-900">{{ formatDateTime(selectedVersion.timestamp) }}</p>
+              <p class="text-sm text-gray-600">Changed On</p>
+              <p class="text-base font-medium text-gray-900">{{ formatDateTime(selectedVersion.changed_on) }}</p>
             </div>
             <div>
               <p class="text-sm text-gray-600">Account ID</p>
-              <p class="text-base font-mono text-gray-700 text-sm">{{ selectedVersion.accountId }}</p>
+              <p class="text-base font-mono text-gray-700 text-sm">{{ selectedVersion.entity_id }}</p>
             </div>
             <div>
-              <p class="text-sm text-gray-600">Version ID</p>
-              <p class="text-base font-mono text-gray-700 text-sm">{{ selectedVersion.id }}</p>
+              <p class="text-sm text-gray-600">Owner ID</p>
+              <p class="text-base font-mono text-gray-700 text-sm">{{ selectedVersion.owner_id }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-600">Currency</p>
+              <p class="text-base font-medium text-gray-900">{{ selectedVersion.currency }}</p>
             </div>
           </div>
         </div>
@@ -208,42 +208,49 @@ import AppModal from '@/components/common/AppModal.vue'
 import AppButton from '@/components/common/AppButton.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import { formatCurrency, formatDate, formatDateTime } from '@/utils/format'
-import type { BalanceVersion } from '@/types/balance.types'
+import type { Account } from '@/types/account.types'
 
 const accountsStore = useAccountsStore()
 const balanceStore = useBalanceStore()
 
 const isModalOpen = ref(false)
-const selectedVersion = ref<BalanceVersion | null>(null)
+const selectedVersion = ref<Account | null>(null)
 
 const columns = [
   { key: 'version', label: 'Version', sortable: false },
   { key: 'balance', label: 'Balance', sortable: false },
-  { key: 'changeAmount', label: 'Change', sortable: false },
-  { key: 'changedBy', label: 'Actor', sortable: false },
-  { key: 'timestamp', label: 'Timestamp', sortable: false },
+  { key: 'changed_by_id', label: 'Actor', sortable: false },
+  { key: 'changed_on', label: 'Timestamp', sortable: false },
+  { key: 'active', label: 'Status', sortable: false },
   { key: 'actions', label: 'Actions', sortable: false }
 ]
 
-// Sort versions by timestamp descending (most recent first)
+// Sort versions by changed_on descending (most recent first)
 const sortedVersions = computed(() => {
   return [...balanceStore.versions].sort((a, b) => {
-    return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    return new Date(b.changed_on).getTime() - new Date(a.changed_on).getTime()
   })
 })
+
+// Determine if a version is current (most recent)
+const isCurrentVersion = (version: Account) => {
+  if (sortedVersions.value.length === 0) return false
+  return version.entity_id === sortedVersions.value[0].entity_id && 
+         version.version === sortedVersions.value[0].version
+}
 
 const fetchVersions = async () => {
   if (accountsStore.activeAccount) {
     try {
-      await balanceStore.fetchVersions(accountsStore.activeAccount.id)
-      await balanceStore.fetchBalance(accountsStore.activeAccount.id)
+      await balanceStore.fetchVersions(accountsStore.activeAccount.entity_id)
+      await balanceStore.fetchBalance(accountsStore.activeAccount.entity_id)
     } catch (error) {
       console.error('Failed to fetch version history:', error)
     }
   }
 }
 
-const handleViewDetails = (version: BalanceVersion) => {
+const handleViewDetails = (version: Account) => {
   selectedVersion.value = version
   isModalOpen.value = true
 }

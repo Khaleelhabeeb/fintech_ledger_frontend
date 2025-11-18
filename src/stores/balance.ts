@@ -1,12 +1,11 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { balanceService } from '@/services/balance.service'
-import { useAuthStore } from './auth'
-import type { BalanceVersion } from '@/types/balance.types'
+import type { Account } from '@/types/account.types'
 
 export const useBalanceStore = defineStore('balance', () => {
   const balance = ref<number>(0)
-  const versions = ref<BalanceVersion[]>([])
+  const versions = ref<Account[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
@@ -36,31 +35,15 @@ export const useBalanceStore = defineStore('balance', () => {
     }
   }
 
-  async function getVersionById(versionId: string) {
-    isLoading.value = true
-    error.value = null
-    try {
-      const version = await balanceService.getVersionById(versionId)
-      return version
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to fetch version'
-      throw err
-    } finally {
-      isLoading.value = false
-    }
-  }
-
   async function deposit(accountId: string, amount: number) {
     isLoading.value = true
     error.value = null
     try {
-      const authStore = useAuthStore()
-      const actor = authStore.user?.email || 'user'
-      const result = await balanceService.deposit(accountId, amount, actor)
-      balance.value = result.newBalance
+      const updatedAccount = await balanceService.deposit(accountId, amount)
+      balance.value = updatedAccount.balance
       // Refresh versions to include the new transaction
       await fetchVersions(accountId)
-      return result
+      return updatedAccount
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Deposit failed'
       throw err
@@ -73,13 +56,11 @@ export const useBalanceStore = defineStore('balance', () => {
     isLoading.value = true
     error.value = null
     try {
-      const authStore = useAuthStore()
-      const actor = authStore.user?.email || 'user'
-      const result = await balanceService.withdraw(accountId, amount, actor)
-      balance.value = result.newBalance
+      const updatedAccount = await balanceService.withdraw(accountId, amount)
+      balance.value = updatedAccount.balance
       // Refresh versions to include the new transaction
       await fetchVersions(accountId)
-      return result
+      return updatedAccount
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Withdrawal failed'
       throw err
@@ -101,7 +82,6 @@ export const useBalanceStore = defineStore('balance', () => {
     error,
     fetchBalance,
     fetchVersions,
-    getVersionById,
     deposit,
     withdraw,
     clearBalance

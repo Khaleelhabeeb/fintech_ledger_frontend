@@ -1,16 +1,17 @@
 export interface User {
   id: string
+  username: string
   email: string
-  name: string
-  createdAt: string
+  created_at: string
+  is_active: boolean
 }
 
 export interface LoginCredentials {
-  email: string
+  username: string
   password: string
 }
 
 export interface AuthResponse {
-  user: User
-  token: string
+  access_token: string
+  token_type: string
 }

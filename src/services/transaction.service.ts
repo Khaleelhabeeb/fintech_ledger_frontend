@@ -1,70 +1,29 @@
-import { apiClient, USE_MOCK } from '@/api/client'
-import { transactionMockService } from './mock/transaction.mock'
+import { apiClient } from '@/api/client'
 import type { Transaction, TransactionFilters } from '@/types/transaction.types'
-import type { PaginationParams, PaginatedResponse } from '@/types/common.types'
 
 class TransactionService {
   /**
-   * Get transactions for a specific account with optional filters and pagination
+   * Get transactions for a specific account with optional filters
    */
   async getTransactions(
     accountId: string,
-    filters?: TransactionFilters,
-    pagination?: PaginationParams
-  ): Promise<PaginatedResponse<Transaction>> {
-    if (USE_MOCK) {
-      return transactionMockService.getTransactions(accountId, filters, pagination)
-    }
-
+    filters?: TransactionFilters
+  ): Promise<Transaction[]> {
     const params = {
-      ...filters,
-      page: pagination?.page,
-      pageSize: pagination?.pageSize
+      start_date: filters?.start_date,
+      end_date: filters?.end_date,
+      transaction_type: filters?.transaction_type,
+      actor_id: filters?.actor_id
     }
 
-    const response = await apiClient.get<PaginatedResponse<Transaction>>(
+    // Remove undefined values from params
+    const cleanParams = Object.fromEntries(
+      Object.entries(params).filter(([_, value]) => value !== undefined)
+    )
+
+    const response = await apiClient.get<Transaction[]>(
       `/accounts/${accountId}/transactions`,
-      { params }
-    )
-    return response.data
-  }
-
-  /**
-   * Create a deposit transaction
-   */
-  async deposit(
-    accountId: string,
-    amount: number,
-    actor: string,
-    description?: string
-  ): Promise<Transaction> {
-    if (USE_MOCK) {
-      return transactionMockService.createDeposit(accountId, amount, actor, description)
-    }
-
-    const response = await apiClient.post<Transaction>(
-      `/accounts/${accountId}/transactions/deposit`,
-      { amount, actor, description }
-    )
-    return response.data
-  }
-
-  /**
-   * Create a withdrawal transaction
-   */
-  async withdraw(
-    accountId: string,
-    amount: number,
-    actor: string,
-    description?: string
-  ): Promise<Transaction> {
-    if (USE_MOCK) {
-      return transactionMockService.createWithdrawal(accountId, amount, actor, description)
-    }
-
-    const response = await apiClient.post<Transaction>(
-      `/accounts/${accountId}/transactions/withdraw`,
-      { amount, actor, description }
+      { params: cleanParams }
     )
     return response.data
   }

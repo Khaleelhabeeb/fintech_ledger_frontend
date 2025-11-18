@@ -129,10 +129,10 @@
                   {{ transaction.type === TransactionType.DEPOSIT ? 'Deposit' : 'Withdrawal' }}
                 </p>
                 <p class="text-xs sm:text-sm text-gray-600">
-                  {{ formatDateTime(transaction.createdAt) }}
+                  {{ formatDateTime(transaction.timestamp) }}
                 </p>
-                <p v-if="transaction.description" class="text-xs text-gray-500 mt-1 truncate">
-                  {{ transaction.description }}
+                <p v-if="transaction.reference" class="text-xs text-gray-500 mt-1 truncate">
+                  Ref: {{ transaction.reference }}
                 </p>
               </div>
             </div>
@@ -149,7 +149,7 @@
                 {{ formatCurrency(transaction.amount, activeAccount.currency) }}
               </p>
               <p class="text-xs sm:text-sm text-gray-600">
-                Balance: {{ formatCurrency(transaction.balanceAfter, activeAccount.currency) }}
+                Version: {{ transaction.account_version }}
               </p>
             </div>
           </div>
@@ -168,7 +168,7 @@
     <DepositModal
       v-if="activeAccount"
       :is-open="isDepositModalOpen"
-      :account-id="activeAccount.id"
+      :account-id="activeAccount.entity_id"
       :currency="activeAccount.currency"
       @close="closeDepositModal"
       @success="handleTransactionSuccess"
@@ -178,7 +178,7 @@
     <WithdrawModal
       v-if="activeAccount"
       :is-open="isWithdrawModalOpen"
-      :account-id="activeAccount.id"
+      :account-id="activeAccount.entity_id"
       :balance="balance"
       :currency="activeAccount.currency"
       @close="closeWithdrawModal"
@@ -233,8 +233,8 @@ async function loadDashboardData() {
   try {
     // Fetch balance, versions, and recent transactions in parallel
     await Promise.all([
-      balanceStore.fetchBalance(activeAccount.value.id),
-      balanceStore.fetchVersions(activeAccount.value.id),
+      balanceStore.fetchBalance(activeAccount.value.entity_id),
+      balanceStore.fetchVersions(activeAccount.value.entity_id),
       fetchRecentTransactions()
     ])
   } catch (err) {
@@ -250,9 +250,7 @@ async function fetchRecentTransactions() {
     return
   }
 
-  // Set page size to 5 for recent transactions
-  transactionsStore.setPageSize(5)
-  await transactionsStore.fetchTransactions(activeAccount.value.id)
+  await transactionsStore.fetchTransactions(activeAccount.value.entity_id)
 }
 
 function handleDeposit() {
@@ -288,7 +286,7 @@ onMounted(async () => {
 
 // Reload data when active account changes
 watch(
-  () => activeAccount.value?.id,
+  () => activeAccount.value?.entity_id,
   async (newAccountId, oldAccountId) => {
     if (newAccountId && newAccountId !== oldAccountId) {
       await loadDashboardData()
